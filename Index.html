@@ -1,0 +1,835 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LanChat — Lobby & Global Chat with Admin</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
+
+  /* Reset and Basic Styles (from Code 1) */
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    /* Prevent scrollbar issues when overlay is active */
+    overflow-y: auto;
+  }
+
+  #app {
+    background: rgba(0,0,0,0.45);
+    border-radius: 16px;
+    max-width: 520px;
+    width: 100%;
+    padding: 2rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    position: relative; /* For positioning the admin button */
+  }
+
+  h1 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  input[type="text"],
+  input[type="password"] {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    border-radius: 12px;
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    outline: none;
+    transition: box-shadow 0.3s ease;
+  }
+
+  input[type="text"]:focus,
+  input[type="password"]:focus {
+    box-shadow: 0 0 8px #ffd369;
+  }
+
+  button {
+    background: #ffd369;
+    border: none;
+    padding: 0.75rem 1rem;
+    width: 100%;
+    border-radius: 12px;
+    font-weight: 700;
+    color: #2d2d2d;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(255, 211, 105, 0.6);
+    transition: background 0.3s ease, color 0.3s ease;
+    margin-bottom: 1rem;
+  }
+
+  button:hover {
+    background: #ffb800;
+    color: #1a1a1a;
+  }
+
+  #lobbyHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  #lobbyCode {
+    font-weight: 700;
+    font-size: 1.25rem;
+    letter-spacing: 4px;
+    text-shadow: 0 0 8px #ffd369;
+  }
+
+  #playerCount {
+    font-style: italic;
+    color: #ffd369;
+  }
+
+  #messages {
+    background: rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 1rem;
+    height: 320px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.25);
+    white-space: pre-wrap;
+  }
+
+  .message {
+    margin-bottom: 0.75rem;
+    max-width: 80%;
+    padding: 0.5rem 0.75rem;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.15);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    font-weight: 600;
+    word-wrap: break-word;
+  }
+
+  .message.self {
+    background: #ffd369;
+    color: #2d2d2d;
+    margin-left: auto;
+    box-shadow: 0 1px 5px rgba(255, 211, 105, 0.9);
+  }
+
+  #chatInput {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  /* Bigger chat input box */
+  #chatMessageInput {
+    flex-grow: 1;
+    font-size: 1.2rem;
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    border: none;
+    outline: none;
+    font-weight: 600;
+    min-height: 48px;
+    resize: none;
+    line-height: 1.4;
+  }
+
+  #sendMessageBtn {
+    flex-shrink: 0;
+    width: 100px;
+  }
+
+  #leaveLobbyBtn {
+    background: #e53e3e;
+    margin-top: 1rem;
+    box-shadow: 0 4px 10px rgba(229, 62, 62, 0.7);
+  }
+
+  /* Scrollbar styling */
+  #messages::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  #messages::-webkit-scrollbar-thumb {
+    background: rgba(255, 211, 105, 0.6);
+    border-radius: 8px;
+  }
+
+  #messages::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* Tabs for chat selection */
+  #chatTabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .tabBtn {
+    flex-grow: 1;
+    padding: 0.5rem 1rem;
+    background: #444;
+    color: #ddd;
+    font-weight: 700;
+    border-radius: 12px;
+    cursor: pointer;
+    user-select: none;
+    text-align: center;
+    transition: background 0.3s ease;
+  }
+
+  .tabBtn.active {
+    background: #ffd369;
+    color: #2d2d2d;
+    box-shadow: 0 4px 10px rgba(255, 211, 105, 0.6);
+  }
+
+  /* Global chat specific styles */
+  #globalPage h2 {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+
+  #globalMessages {
+    background: rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 1rem;
+    height: 320px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.25);
+    white-space: pre-wrap;
+  }
+
+  #globalChatInput {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  #globalChatMessageInput {
+    flex-grow: 1;
+    font-size: 1.2rem;
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    border: none;
+    outline: none;
+    font-weight: 600;
+    min-height: 48px;
+    resize: none;
+    line-height: 1.4;
+  }
+
+  #sendGlobalMessageBtn {
+    flex-shrink: 0;
+    width: 100px;
+    background: #ffd369;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    color: #2d2d2d;
+    cursor: pointer;
+  }
+
+  #leaveGlobalBtn {
+    margin-top: 1rem;
+    background: #e53e3e;
+    border: none;
+    border-radius: 12px;
+    padding: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(229,62,62,0.7);
+    width: 100%;
+  }
+
+  /* Admin Button (from Code 2) */
+  #adminBtn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 8px 16px;
+    border: none;
+    background: #00ffff22;
+    color: #0ff;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow:
+      0 0 4px #00ffffaa,
+      0 0 10px #00ffff55;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+    user-select: none;
+    z-index: 1000;
+    font-family: 'Orbitron', sans-serif;
+  }
+
+  #adminBtn:hover {
+    background: #00ffff44;
+    box-shadow:
+      0 0 6px #00ffffee,
+      0 0 15px #00ffffdd;
+  }
+
+  /* Overlay for modals (from Code 2) */
+  #overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 15, 30, 0.85);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1001; /* Ensure it's above the app */
+    backdrop-filter: blur(5px);
+  }
+
+  /* Login Modal (from Code 2) */
+  #loginModal {
+    background: #002f4b;
+    border-radius: 15px;
+    padding: 20px 25px;
+    width: 280px;
+    box-shadow:
+      0 0 10px #00ffffcc,
+      inset 0 0 15px #00ffff88;
+    text-align: center;
+  }
+
+  #loginModal h2 {
+    margin: 0 0 15px;
+    color: #00ffff;
+    text-shadow: 0 0 6px #00ffffaa;
+    font-size: 1.5rem;
+  }
+
+  .inputField {
+    width: 100%;
+    padding: 8px 10px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    border: none;
+    background: #004a6e;
+    color: #00ffff;
+    font-size: 0.9rem;
+    box-shadow: inset 0 0 8px #00ffff88;
+    outline: none;
+    transition: background 0.3s ease;
+    font-family: 'Orbitron', sans-serif;
+  }
+
+  .inputField::placeholder {
+    color: #00ccccaa;
+  }
+
+  .inputField:focus {
+    background: #007dbd;
+    box-shadow: 0 0 8px #00ffffee;
+  }
+
+  #loginBtn {
+    width: 100%;
+    padding: 8px 0;
+    background: #00ffff;
+    border: none;
+    border-radius: 12px;
+    color: #002f4b;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 0 0 15px #00ffffcc;
+    transition: background 0.3s ease;
+    font-family: 'Orbitron', sans-serif;
+  }
+
+  #loginBtn:hover {
+    background: #00e5e5;
+  }
+
+  #errorMsg {
+    color: #ff2f2f;
+    font-weight: bold;
+    margin-top: -10px;
+    margin-bottom: 10px;
+    height: 16px;
+    font-size: 0.8rem;
+    text-shadow: 0 0 4px #ff2f2f88;
+  }
+
+  /* Admin GUI (from Code 2) */
+  #adminGUI {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, #001622, #003b5c);
+    display: none;
+    flex-direction: column;
+    color: #00ffff;
+    padding: 30px;
+    font-size: 1rem;
+    user-select: none;
+    overflow-y: auto;
+    z-index: 1002; /* Above the overlay */
+    align-items: center;
+    font-family: 'Orbitron', sans-serif;
+  }
+
+  #closeAdminBtn {
+    background: transparent;
+    border: none;
+    font-size: 2rem;
+    color: #00ffffaa;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    user-select: none;
+    margin-bottom: 15px;
+    align-self: center;
+  }
+
+  #closeAdminBtn:hover {
+    color: #00ffff;
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <h1>LanChat</h1>
+
+  <button id="adminBtn">Admin</button>
+
+  <div id="frontPage">
+    <input type="text" id="nameInput" placeholder="Enter your name (max 20 chars)" maxlength="20" autocomplete="off" />
+    <button id="proceedBtn">Proceed</button>
+  </div>
+
+  <div id="chatChoicePage" class="hidden">
+    <button id="createLobbyBtn">Create Lobby</button>
+    <input type="text" id="joinLobbyInput" placeholder="Enter lobby code (6 letters)" maxlength="6" autocomplete="off" style="text-transform: uppercase;" />
+    <button id="joinLobbyBtn">Join Lobby</button>
+    <button id="joinGlobalBtn">Join Global Chat</button>
+  </div>
+
+  <div id="lobbyPage" class="hidden" aria-live="polite">
+    <div id="lobbyHeader">
+      <div>Lobby Code: <span id="lobbyCode"></span></div>
+      <div id="playerCount">Players: 0</div>
+    </div>
+
+    <div id="chatTabs">
+      <div class="tabBtn active" data-chat="lobby">Lobby Chat</div>
+      <div class="tabBtn" data-chat="global">Global Chat</div>
+    </div>
+
+    <div id="messages" role="log" aria-live="polite" aria-relevant="additions"></div>
+
+    <div id="chatInput">
+      <input type="text" id="chatMessageInput" placeholder="Type your message..." maxlength="200" autocomplete="off" />
+      <button id="sendMessageBtn">Send</button>
+    </div>
+
+    <button id="leaveLobbyBtn">Leave Lobby</button>
+  </div>
+
+  <div id="globalPage" class="hidden" aria-live="polite">
+    <h2 style="text-align:center; margin-bottom:1rem;">Global Chat</h2>
+
+    <div id="globalMessages" role="log" aria-live="polite" aria-relevant="additions"></div>
+
+    <div id="globalChatInput">
+      <input type="text" id="globalChatMessageInput" placeholder="Type your message..." maxlength="200" autocomplete="off" />
+      <button id="sendGlobalMessageBtn">Send</button>
+    </div>
+
+    <button id="leaveGlobalBtn">Leave Global Chat</button>
+  </div>
+
+</div>
+
+<div id="overlay">
+  <div id="loginModal">
+    <h2>Admin Login</h2>
+    <input type="text" id="username" class="inputField" placeholder="Username" autocomplete="off" />
+    <input type="password" id="password" class="inputField" placeholder="Password" autocomplete="off" />
+    <div id="errorMsg"></div>
+    <button id="loginBtn">Login</button>
+  </div>
+</div>
+
+<div id="adminGUI">
+  <button id="closeAdminBtn" title="Close Admin Panel">&times;</button>
+  </div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+<script>
+  // Firebase Initialization and DOM Elements (from Code 1)
+  const firebaseConfig = {
+    apiKey: "AIzaSyAdssAURPfxQKdi7KbAlSisH0j34J8A144",
+    authDomain: "landkit-5e55b.firebaseapp.com",
+    projectId: "landkit-5e55b",
+    storageBucket: "landkit-5e55b.appspot.com",
+    messagingSenderId: "920665056429",
+    appId: "1:920665056429:web:c3c134404d735df9275224",
+    measurementId: "G-BHFXJDEBQE"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const frontPage = document.getElementById('frontPage');
+  const chatChoicePage = document.getElementById('chatChoicePage');
+  const lobbyPage = document.getElementById('lobbyPage');
+  const globalPage = document.getElementById('globalPage');
+
+  const nameInput = document.getElementById('nameInput');
+  const proceedBtn = document.getElementById('proceedBtn');
+
+  const createLobbyBtn = document.getElementById('createLobbyBtn');
+  const joinLobbyInput = document.getElementById('joinLobbyInput');
+  const joinLobbyBtn = document.getElementById('joinLobbyBtn');
+  const joinGlobalBtn = document.getElementById('joinGlobalBtn');
+
+  const lobbyCodeDisplay = document.getElementById('lobbyCode');
+  const playerCountDisplay = document.getElementById('playerCount');
+
+  const chatTabs = document.querySelectorAll('.tabBtn');
+  const messagesDiv = document.getElementById('messages');
+  const chatMessageInput = document.getElementById('chatMessageInput');
+  const sendMessageBtn = document.getElementById('sendMessageBtn');
+  const leaveLobbyBtn = document.getElementById('leaveLobbyBtn');
+
+  const globalMessagesDiv = document.getElementById('globalMessages');
+  const globalChatMessageInput = document.getElementById('globalChatMessageInput');
+  const sendGlobalMessageBtn = document.getElementById('sendGlobalMessageBtn');
+  const leaveGlobalBtn = document.getElementById('leaveGlobalBtn');
+
+  // State variables (from Code 1)
+  let username = '';
+  let currentLobby = null;
+  let lobbyUnsub = null;
+  let lobbyPlayersUnsub = null;
+  let lobbyMessagesUnsub = null;
+  let globalMessagesUnsub = null;
+  let currentChat = 'lobby'; // 'lobby' or 'global'
+
+  // Helper functions (from Code 1)
+  function generateLobbyCode() {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += letters.charAt(Math.floor(Math.random() * letters.length));
+    }
+    return code;
+  }
+
+  function showPage(page) {
+    [frontPage, chatChoicePage, lobbyPage, globalPage].forEach(p => p.classList.add('hidden'));
+    page.classList.remove('hidden');
+  }
+
+  function sanitizeLobbyCode(input) {
+    return input.trim().toUpperCase();
+  }
+
+  function addMessage(container, msg) {
+    const div = document.createElement('div');
+    div.className = 'message';
+    if (msg.username === username) div.classList.add('self');
+    div.textContent = `${msg.username}: ${msg.text}`;
+    container.appendChild(div);
+  }
+
+  function scrollMessagesToBottom(container) {
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function setActiveChatTab(chat) {
+    currentChat = chat;
+    chatTabs.forEach(tab => {
+      tab.classList.toggle('active', tab.getAttribute('data-chat') === chat);
+    });
+
+    if (chat === 'lobby') {
+      messagesDiv.style.display = 'block';
+      chatMessageInput.disabled = false;
+      sendMessageBtn.disabled = false;
+
+      globalMessagesDiv.style.display = 'none';
+      globalChatMessageInput.disabled = true;
+      sendGlobalMessageBtn.disabled = true;
+    } else if (chat === 'global') {
+      messagesDiv.style.display = 'none';
+      chatMessageInput.disabled = true;
+      sendMessageBtn.disabled = true;
+
+      globalMessagesDiv.style.display = 'block';
+      globalChatMessageInput.disabled = false;
+      sendGlobalMessageBtn.disabled = false;
+    }
+  }
+
+  function addGlobalMessage(msg) {
+    const div = document.createElement('div');
+    div.className = 'message';
+    if (msg.username === username) div.classList.add('self');
+    div.textContent = `${msg.username}: ${msg.text}`;
+    globalMessagesDiv.appendChild(div);
+  }
+
+  // Event listeners and functions (from Code 1)
+  proceedBtn.onclick = () => {
+    const name = nameInput.value.trim();
+    if (!name) {
+      alert('Please enter your name.');
+      return;
+    }
+    username = name.slice(0, 20);
+    frontPage.classList.add('hidden');
+    chatChoicePage.classList.remove('hidden');
+  };
+
+  createLobbyBtn.onclick = async () => {
+    let code = generateLobbyCode();
+
+    let codeExists = true;
+    while (codeExists) {
+      const doc = await db.collection('lobbies').doc(code).get();
+      if (!doc.exists) {
+        codeExists = false;
+      } else {
+        code = generateLobbyCode();
+      }
+    }
+
+    await db.collection('lobbies').doc(code).set({
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      players: {},
+    });
+
+    currentLobby = code;
+    await joinLobby(code);
+  };
+
+  joinLobbyBtn.onclick = () => {
+    let code = sanitizeLobbyCode(joinLobbyInput.value);
+    if (!code.match(/^[A-Z]{6}$/)) {
+      alert('Please enter a valid 6-letter lobby code.');
+      return;
+    }
+    joinLobby(code);
+  };
+
+  async function joinLobby(code) {
+    const lobbyRef = db.collection('lobbies').doc(code);
+    const doc = await lobbyRef.get();
+    if (!doc.exists) {
+      alert('Lobby not found.');
+      return;
+    }
+
+    currentLobby = code;
+    showPage(lobbyPage);
+    lobbyCodeDisplay.textContent = code;
+
+    const playerKey = username;
+
+    await db.runTransaction(async (transaction) => {
+      const lobbyDoc = await transaction.get(lobbyRef);
+      if (!lobbyDoc.exists) throw "Lobby does not exist!";
+      const players = lobbyDoc.data().players || {};
+      players[playerKey] = true;
+      transaction.update(lobbyRef, { players });
+    });
+
+    lobbyPlayersUnsub = lobbyRef.onSnapshot(snapshot => {
+      const data = snapshot.data();
+      const players = data?.players || {};
+      const count = Object.keys(players).length;
+      playerCountDisplay.textContent = `Players: ${count}`;
+    });
+
+    lobbyMessagesUnsub = lobbyRef.collection('messages').orderBy('timestamp')
+      .onSnapshot(snapshot => {
+        if (currentChat !== 'lobby') return;
+        messagesDiv.innerHTML = '';
+        snapshot.forEach(doc => {
+          const msg = doc.data();
+          addMessage(messagesDiv, msg);
+        });
+        scrollMessagesToBottom(messagesDiv);
+      });
+
+    setActiveChatTab('lobby');
+  }
+
+  sendMessageBtn.onclick = async () => {
+    const text = chatMessageInput.value.trim();
+    if (!text || !currentLobby) return;
+    chatMessageInput.value = '';
+
+    const lobbyRef = db.collection('lobbies').doc(currentLobby);
+    await lobbyRef.collection('messages').add({
+      username,
+      text,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  };
+
+  leaveLobbyBtn.onclick = async () => {
+    if (!currentLobby) return;
+
+    const lobbyRef = db.collection('lobbies').doc(currentLobby);
+    await db.runTransaction(async (transaction) => {
+      const lobbyDoc = await transaction.get(lobbyRef);
+      if (!lobbyDoc.exists) return;
+      const players = lobbyDoc.data().players || {};
+      delete players[username];
+      transaction.update(lobbyRef, { players });
+    });
+
+    if (lobbyPlayersUnsub) lobbyPlayersUnsub();
+    if (lobbyMessagesUnsub) lobbyMessagesUnsub();
+
+    currentLobby = null;
+    messagesDiv.innerHTML = '';
+    chatMessageInput.value = '';
+    showPage(chatChoicePage);
+  };
+
+  chatTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const chat = tab.getAttribute('data-chat');
+      setActiveChatTab(chat);
+    });
+  });
+
+  joinGlobalBtn.onclick = () => {
+    chatChoicePage.classList.add('hidden');
+    globalPage.classList.remove('hidden');
+    subscribeGlobalChat();
+  };
+
+  function subscribeGlobalChat() {
+    if (globalMessagesUnsub) globalMessagesUnsub();
+
+    globalMessagesUnsub = db.collection('globalMessages').orderBy('timestamp')
+      .onSnapshot(snapshot => {
+        globalMessagesDiv.innerHTML = '';
+        snapshot.forEach(doc => {
+          const msg = doc.data();
+          addGlobalMessage(msg);
+        });
+        scrollMessagesToBottom(globalMessagesDiv);
+      });
+  }
+
+  sendGlobalMessageBtn.onclick = async () => {
+    const text = globalChatMessageInput.value.trim();
+    if (!text) return;
+    globalChatMessageInput.value = '';
+
+    await db.collection('globalMessages').add({
+      username,
+      text,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  };
+
+  leaveGlobalBtn.onclick = () => {
+    if (globalMessagesUnsub) globalMessagesUnsub();
+    globalMessagesDiv.innerHTML = '';
+    globalChatMessageInput.value = '';
+    globalPage.classList.add('hidden');
+    chatChoicePage.classList.remove('hidden');
+  };
+
+  chatMessageInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessageBtn.click();
+    }
+  });
+
+  globalChatMessageInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendGlobalMessageBtn.click();
+    }
+  });
+
+  // Admin Login Functionality (from Code 2)
+  const adminBtn = document.getElementById('adminBtn');
+  const overlay = document.getElementById('overlay');
+  const loginModal = document.getElementById('loginModal');
+  const loginBtn = document.getElementById('loginBtn');
+  const usernameInput = document.getElementById('username');
+  const passwordInput = document.getElementById('password');
+  const errorMsg = document.getElementById('errorMsg');
+  const adminGUI = document.getElementById('adminGUI');
+  const closeAdminBtn = document.getElementById('closeAdminBtn');
+
+  adminBtn.addEventListener('click', () => {
+    overlay.style.display = 'flex';
+    usernameInput.value = '';
+    passwordInput.value = '';
+    errorMsg.textContent = '';
+    usernameInput.focus();
+  });
+
+  loginBtn.addEventListener('click', () => {
+    const user = usernameInput.value.trim().toLowerCase();
+    const pass = passwordInput.value;
+
+    if (user === 'admin' && pass === 'Landon') {
+      overlay.style.display = 'none';
+      adminGUI.style.display = 'flex';
+    } else {
+      errorMsg.textContent = 'Invalid username or password';
+      passwordInput.value = '';
+      passwordInput.focus();
+    }
+  });
+
+  [usernameInput, passwordInput].forEach(input => {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        loginBtn.click();
+      }
+    });
+  });
+
+  closeAdminBtn.addEventListener('click', () => {
+    adminGUI.style.display = 'none';
+  });
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      overlay.style.display = 'none';
+    }
+  });
+</script>
+
+</body>
+</html>
